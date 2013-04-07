@@ -11,16 +11,53 @@ Specific features that may be appealing:
  - **"Impure"** functions that mutate vectors are available for performance when you need it. i.e. you can use a nice functional style most of the time, but switch to mutation when you hit a bottleneck.
  - **Primitive-backed** special purpose vectors and matrices for performance, e.g. Vector3 for fast 3D maths.
  - **Flexible DSL-style** functions for manipulating vectors and matrices, e.g. the ability to create a "view" into a subspace of a large vector.
+ - **`core.matrix`** fully supported
  
 [![Build Status](https://travis-ci.org/mikera/vectorz-clj.png?branch=vectorz-clj-0.2.2)](https://travis-ci.org/mikera/vectorz-clj)
 
+### License
+
+Like vectorz, vectorz-clj is licensed under the LGPL license:
+
+ - http://www.gnu.org/licenses/lgpl.html
 
 ### Usage
 
-Follow the instructions to install with Leiningen / Maven from Clojars: https://clojars.org/net.mikera/vectorz-clj
+Follow the instructions to install with Leiningen / Maven from Clojars: 
 
-Vector Examples:
+ - https://clojars.org/net.mikera/vectorz-clj
+ 
+You can then use Vectorz as a standard core.matrix implementation. Example:
 
+```clojure
+    (use 'clojure.core.matrix)
+    (use 'clojure.core.matrix.operators)           ;; overrides *, + etc. for matrices
+    
+    (set-current-implementation :vectorz)  ;; uses Vectorz as default matrix implementation
+    
+    ;; define a 2x2 Matrix
+    (def M (matrix [[1 2] [3 4]]))
+    M
+    => #<Matrix22 [[1.0,2.0][3.0,4.0]]>
+    
+    ;; define a length 2 vector (a 1D matrix is equivalent considered a vector in core.matrix)
+    (def v (matrix [1 2]))
+    v
+    => #<Vector2 [1.0,2.0]>
+    
+    ;; Matrix x Vector multiply
+    (* M v)
+    => #<Vector2 [5.0,11.0]>
+```
+
+Vectorz also provides specialized functions in `mikera.vectorz.core` that give access to 
+advanced features of Vectorz that are not necessarily available through the core.matrix API.
+This includes type hinted and primitive functions that will perform better than using 
+the general purpose core.matrix API.
+
+Here are some Vector Examples:
+
+```clojure
     (in-ns 'mikera.vectorz.core)
 
     (def a (vec [1 2 3]))
@@ -43,6 +80,7 @@ Vector Examples:
       (fill! (subvec v 3 4) 1.0)  ;; fill a subvector with ones
       v)
     => #<Vector [0.0,0.0,0.0,1.0,1.0,1.0,1.0,0.0,0.0,0.0]>
+```
     
 ### Purpose
 
