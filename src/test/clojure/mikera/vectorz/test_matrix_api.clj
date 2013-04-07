@@ -1,16 +1,17 @@
 (ns mikera.vectorz.test-matrix-api
+  (:refer-clojure :exclude [vector? * - +])
   (:use [clojure test])
-  (:use core.matrix)
-  (:use core.matrix.operators)
-  (:require core.matrix.compliance-tester)
-  (:require [core.matrix.protocols :as mp])
+  (:use clojure.core.matrix)
+  (:use clojure.core.matrix.operators)
+  (:require clojure.core.matrix.compliance-tester)
+  (:require [clojure.core.matrix.protocols :as mp])
   (:require [mikera.vectorz.core :as v])
   (:require [mikera.vectorz.matrix :as m])
   (:require [mikera.vectorz.matrix-api])
-  (:require core.matrix.impl.persistent-vector)
-  (:import [mikera.matrixx AMatrix Matrixx MatrixMN])
-  (:import [mikera.vectorz AVector Vectorz Vector])
-  (:refer-clojure :exclude [vector? * - +]))
+  (:require clojure.core.matrix.impl.persistent-vector)
+  (:require [clojure.core.matrix.impl.wrappers :as wrap])
+  (:import [mikera.matrixx AMatrix Matrixx Matrix])
+  (:import [mikera.vectorz AVector Vectorz Vector]))
 
 ;; note - all the operators are core.matrix operators
 
@@ -36,7 +37,43 @@
     (mp/assign-array! m (double-array [2 4 6 8]))
     (is (equals m [[2 4] [6 8]]))
     (mp/assign-array! m (double-array 4))
-    (is (equals m [[0 0] [0 0]]))))
+    (is (equals m [[0 0] [0 0]])))
+  (let [v (v/vec [1 2 3])]
+    (is (equals [2 4 6] (add v v)))))
+
+(deftest test-ndarray
+  (is (equals [[[1]]] (matrix :vectorz [[[1]]])))
+  (is (equals [[[[1]]]] (matrix :vectorz [[[[1]]]])))
+  (is (equals [[[1]]] (slice (matrix :vectorz [[[[1]]]]) 0)))
+  (is (== 4 (dimensionality (matrix :vectorz [[[[1]]]]))))
+  (is (equals [[[1]]] (wrap/wrap-slice (matrix :vectorz [[[[1]]]]) 0)))
+  (is (equals [[[[1]]]] (wrap/wrap-nd (matrix :vectorz [[[[1]]]]))))) 
+
+(deftest test-element-equality
+  (is (e= (matrix :vectorz [[0.5 0] [0 2]])
+          [[0.5 0.0] [0.0 2.0]]))
+ ;; TODO: enable this test once fixed version of core.matrix is released
+ ;; (is (not (e= (matrix :vectorz [[1 2] [3 4]])
+ ;;              [[5 6] [7 8]])))
+  )
+
+(deftest test-inverse
+  (let [m (matrix :vectorz [[0.5 0] [0 2]])] 
+    (is (equals [[2 0] [0 0.5]] (inverse m)))))
+
+(defn test-round-trip [m]
+  (is (equals m (read-string (print-str m)))))
+
+(deftest test-round-trips
+;  (test-round-trip (v/of 1 2))
+;  (test-round-trip (v/of 1 2 3 4 5))
+;  (test-round-trip (matrix :vectorz [[1 2 3] [4 5 6]]))
+;  (test-round-trip (matrix :vectorz [[1 2] [3 4]]))
+;  (test-round-trip (first (slices (v/of 1 2 3))))
+)
+
+(deftest test-equals
+  (is (equals (v/of 1 2) [1 2])))
 
 (deftest test-vector-ops
   (testing "addition"
@@ -90,7 +127,7 @@
     (is (equals [3 4] (slice (matrix [[1 2] [3 4]]) 0 1)))
     (is (equals [2 4] (slice (matrix [[1 2] [3 4]]) 1 1))))
   (testing "slices of vector"
-    (is (= '(1.0 2.0 3.0) (slices (matrix [1 2 3])))))) 
+    (is (equals '(1.0 2.0 3.0) (slices (matrix [1 2 3])))))) 
 
 ;; verify scalar operators should still work on numbers!
 (deftest test-scalar-operators
@@ -122,8 +159,20 @@
 
 (deftest test-functional-ops
   (testing "eseq"
-    (= [1.0 2.0 3.0 4.0] (eseq (matrix [[1 2] [3 4]])))))
+    (is (= [1.0 2.0 3.0 4.0] (eseq (matrix [[1 2] [3 4]]))))))
 
-;; run compliance test
+(deftest test-maths-functions
+  (testing "abs"
+    (is (equals [1 2 3] (abs [-1 2 -3]))))) 
+
+;; run compliance tests
+
+(deftest instance-tests
+  (clojure.core.matrix.compliance-tester/instance-test (v/of 1 2 3))
+  (clojure.core.matrix.compliance-tester/instance-test (clone (first (slices (v/of 1 2 3)))))
+  (clojure.core.matrix.compliance-tester/instance-test (first (slices (v/of 1 2 3))))
+  (clojure.core.matrix.compliance-tester/instance-test (first (slices (v/of 1 2 3 4 5 6))))
+  (clojure.core.matrix.compliance-tester/instance-test (array :vectorz [[1 2] [3 4]]))) 
+
 (deftest compliance-test
-  (core.matrix.compliance-tester/compliance-test (v/of 1 2))) 
+  (clojure.core.matrix.compliance-tester/compliance-test (v/of 1 2))) 
